@@ -7,6 +7,8 @@ repositories {
 
 dependencies {
     groovy group: 'org.codehaus.groovy', name: 'groovy', version: '2.1.0'
+
+    runtime 'commons-cli:commons-cli:1.2'
 }
 
 mainClassName = "main"
