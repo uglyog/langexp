@@ -13,7 +13,7 @@ class StateMachineBuilderTest
             }
         }
 
-        stateMachine.currentState = 'state_a'
+        stateMachine.start('state_a')
         stateMachine.transition('event_a')
 
         assert stateMachine.currentState == 'state_b'
@@ -29,7 +29,7 @@ class StateMachineBuilderTest
             }
         }
 
-        stateMachine.currentState = 'state_a'
+        stateMachine.start('state_a')
         stateMachine.transition('event_a')
 
         assert stateMachine.currentState == 'state_c'
@@ -45,73 +45,11 @@ class StateMachineBuilderTest
             }
         }
 
-        stateMachine.currentState = 'state_a'
+        stateMachine.start('state_a')
         stateMachine.transition('event_a')
 
         assert stateMachine.currentState == 'state_b'
         assert actionPerformed
-    }
-
-    @Test
-    void testDslBuildsCorrectStructure()
-    {
-        Closure cl = { println "cl" }
-        Closure cl1 = { println "cl1" }
-        Closure cl2 = { println "cl2" }
-        Closure cl3 = { println "cl3" }
-        def expected_state_machine = [
-            (null): [
-                [event: "customerSubmitsRegistrationForVerifificationByCdn", to: "WAITING_FOR_CDN_VERIFICATION", action: cl],
-                [event: "customerSelectsToBeNotifiedWhenNmiReady", to: "WAITING_FOR_NMI_TO_BE_READY"]
-            ],
-            ("WAITING_FOR_CDN_VERIFICATION"): [
-                [event: "verifiedByCdn", to: "ACTIVE", action: cl1],
-                [event: "retailerApprovesRegistration", to: "ACTIVE", action: cl1],
-                [event: "retailerRejectsRegistration", to: "REJECTED_BY_RETAILER"],
-                [event: "retailerDetectsRegistrationError", to: "CORRECTING_REGISTRATION"],
-                [event: "esbReportedCustomerMovedOut", to: "MOVED_OUT", action: cl2]
-            ],
-            ("WAITING_FOR_VERIFICATION"): [
-                [event: "retailerApprovesRegistration", to: "ACTIVE", action: cl1],
-                [event: "retailerRejectsRegistration", to: "REJECTED_BY_RETAILER"],
-                [event: "retailerDetectsRegistrationError", to: "CORRECTING_REGISTRATION"],
-                [event: "esbReportedCustomerMovedOut", to: "MOVED_OUT", action: cl2],
-                [event: "customerChangesRetailer", to: "CHANGED_RETAILER", action: cl3]
-            ]
-        ]
-
-        def actualStateMachine = StateMachineBuilder.build {
-            state(null) {
-                event("customerSubmitsRegistrationForVerifificationByCdn") {
-                    transitionTo "WAITING_FOR_CDN_VERIFICATION"
-                    action(cl)
-                }
-                event("customerSelectsToBeNotifiedWhenNmiReady", to: "WAITING_FOR_NMI_TO_BE_READY")
-            }
-
-            state("WAITING_FOR_CDN_VERIFICATION") {
-                event "verifiedByCdn", to: "ACTIVE", action: cl1
-                event "retailerApprovesRegistration", to: "ACTIVE", action: cl1
-                event "retailerRejectsRegistration", to: "REJECTED_BY_RETAILER"
-                event "retailerDetectsRegistrationError", to: "CORRECTING_REGISTRATION"
-                event "esbReportedCustomerMovedOut", to: "MOVED_OUT", action: cl2
-            }
-
-            state("WAITING_FOR_VERIFICATION") {
-                onRetailerApprovesRegistration to: "ACTIVE", action: cl1
-                onRetailerRejectsRegistration to: "REJECTED_BY_RETAILER"
-                onRetailerDetectsRegistrationError to: "CORRECTING_REGISTRATION"
-                onEsbReportedCustomerMovedOut(to: "MOVED_OUT") {
-                    action cl2
-                }
-                onCustomerChangesRetailer {
-                    to "CHANGED_RETAILER"
-                    action cl3
-                }
-            }
-        }
-
-        assert actualStateMachine.stateMachineMap == expected_state_machine
     }
 
     @Test
@@ -154,9 +92,47 @@ class StateMachineBuilderTest
             state "state_c"
         }
 
-        stateMachine.currentState = 'state_a'
+        stateMachine.start('state_a')
         stateMachine.transition("event_a")
 
         assert "state_c" == stateMachine.currentState
+    }
+
+    @Test
+    void testGlobalActionPerformed()
+    {
+        boolean actionPerformed = false
+        def stateMachine = StateMachineBuilder.build {
+            state('state_a') {
+                event('event_a', to: 'state_b')
+            }
+            action { actionPerformed = true }
+        }
+
+        stateMachine.start('state_a')
+        stateMachine.transition('event_a')
+
+        assert stateMachine.currentState == 'state_b'
+        assert actionPerformed
+    }
+
+    @Test
+    void testTerminationActionPerformed()
+    {
+        boolean actionPerformed = false
+        def stateMachine = StateMachineBuilder.build {
+            state('state_a') {
+                event('event_a', to: 'state_b')
+            }
+            finalState('state_b')
+            onTermination { actionPerformed = true }
+        }
+
+        stateMachine.start('state_a')
+        stateMachine.transition('event_a')
+
+        assert actionPerformed
+        assert stateMachine.currentState == 'state_b'
+        assert stateMachine.terminated
     }
 }

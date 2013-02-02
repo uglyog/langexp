@@ -14,7 +14,7 @@ class Token
     }
 
     Type type = Type.UNKNOWN
-    String matched, firstMatched
+    StringBuilder matched = new StringBuilder()
 
     String toString() {
         "$type($matched)"
