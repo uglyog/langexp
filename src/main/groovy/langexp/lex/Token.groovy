@@ -8,11 +8,12 @@ class Token
         SYMBOL,
         OPERATOR,
         NUMBER,
-        STRING
+        STRING,
+        COMMENT
     }
 
     Type type
-    String matched
+    String matched, firstMatched
 
     String toString() {
         "$type($matched)"

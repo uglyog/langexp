@@ -11,7 +11,7 @@ if (!options?.arguments()) {
 
 options.arguments().each {
     new File(it).withReader { reader ->
-        def tokeniser = new Tokeniser(input: reader)
+        def tokeniser = new Tokeniser(input: new PushbackReader(reader))
         def token = tokeniser.nextToken()
         while (token) {
             println token
