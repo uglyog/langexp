@@ -3,6 +3,7 @@ package langexp.lex
 class Token
 {
     enum Type {
+        UNKNOWN,
         WHITESPACE,
         NEWLINE,
         SYMBOL,
@@ -12,7 +13,7 @@ class Token
         COMMENT
     }
 
-    Type type
+    Type type = Type.UNKNOWN
     String matched, firstMatched
 
     String toString() {

@@ -1,22 +1,30 @@
 package langexp.lex
 
+import langexp.statemachine.StateMachine
+
 class Tokeniser
 {
     Reader input
     Token current, result
 
+    def stateMachine = StateMachine.build {
+        state {
+            event '\n', to: Token.Type.NEWLINE
+        }
+    }
+
     Token nextToken() {
-        result = null
-        while (!result) {
+        result = [matched: new StringBuilder()]
+        while (!stateMachine.terminated) {
             def ch = input.read()
             if (ch >= 0) {
-                advanceState(Character.toChars(ch) as String)
+                result.matched.append(ch)
+                StateMachine.transition(ch, tokenStateMap, result)
             } else {
-                advanceState(null)
-                return result
+                StateMachine.transition(null, tokenStateMap, result)
             }
         }
-        result
+        new Token(type: result.state, matched: ch, firstMatched: ch)
     }
 
     void advanceState(String ch) {
