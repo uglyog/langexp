@@ -1,39 +1,44 @@
 package langexp.statemachine
 
-import groovy.util.logging.Log4j
+import java.util.regex.Pattern
 
-@Log4j
 class StateMachine {
 
-    def stateMachineMap = [:], currentState, subject, globalActions = []
+    def stateMachineMap = [:], currentState, currentEvent, subject, globalActions = []
     Closure terminationAction
     boolean terminated
 
     void transition(event) {
 
         if (terminated) {
-            log.error('State machine has terminated')
+            println('State machine has terminated')
             return
         }
 
-        def transition = stateMachineMap[currentState].events.find { it instanceof Map && it.event == event && (!it.guard || it.guard(this)) }
+        currentEvent = event
+
+        def transition = stateMachineMap[currentState]?.events?.find { it instanceof Map && matches(it.event, currentEvent) && (!it.guard || it.guard(this)) }
         if (transition) {
             if (transition.action) {
+                transition.action.delegate = this
                 transition.action()
             }
-            globalActions.each { action -> action(event) }
+            globalActions.each { action -> action(currentEvent) }
             currentState = transition.to
             def newStateEntry = stateMachineMap[currentState]
             if (newStateEntry) {
                 if (newStateEntry.events && newStateEntry.events.first() instanceof Closure) {
-                    newStateEntry.events.first().call(this)
+                    def action = newStateEntry.events.first()
+                    action.delegate = this
+                    action()
                 }
                 if (newStateEntry.finalState) {
                     terminate()
                 }
             }
         } else {
-            log.warn("For state='$currentState' the event='$event' does not apply")
+            println("For state='$currentState' the event='$event' does not apply, terminating the state machine")
+            terminate()
         }
     }
 
@@ -48,5 +53,17 @@ class StateMachine {
             terminationAction()
         }
         terminated = true
+    }
+
+    static boolean matches(event1, event2) {
+        if (event1 instanceof Pattern) {
+            event1.matcher(event2).matches()
+        } else {
+            event1 == event2
+        }
+    }
+
+    void clearEvent() {
+        currentEvent = null
     }
 }

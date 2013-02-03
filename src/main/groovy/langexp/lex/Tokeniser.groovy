@@ -6,17 +6,52 @@ class Tokeniser
 {
     Reader input
 
+    def pushback = {
+        input.unread(stateMachine.currentEvent.toCharArray())
+        stateMachine.clearEvent()
+    }
+
+    def pushbackAndTerminate = {
+        pushback()
+        terminate()
+    }
+
     def stateMachine = StateMachineBuilder.build {
         start {
             event '\n', to: Token.Type.NEWLINE
+            event '/', to: 'SLASH'
+            event ~/[ \t]/, to:  Token.Type.WHITESPACE
+            event ~/[A-Za-z_!@#\$]/, to: Token.Type.SYMBOL
+            event ~/['"`]/, to: Token.Type.STRING
         }
+        state('SLASH') {
+            event '/', to: Token.Type.COMMENT
+        }
+        state(Token.Type.COMMENT) {
+            event ~/[^\n]/
+            event '\n', action: pushbackAndTerminate
+        }
+        state(Token.Type.WHITESPACE) {
+            event ~/[ \t]/
+            event ~/[^ \t]/, action: pushbackAndTerminate
+        }
+        state(Token.Type.SYMBOL) {
+            event ~/[A-Za-z_!@#\$]/
+            event ~/[^A-Za-z_!@#\$]/, action: pushbackAndTerminate
+        }
+        state(Token.Type.STRING) {
+            event ~/[^'"`]/
+            event ~/['"`]/, action: { terminate() }
+        }
+
         finalState(Token.Type.NEWLINE)
+
         onTermination {
             if (stateMachine.currentState instanceof Token.Type) {
                 subject.type = stateMachine.currentState
             }
         }
-        action { event -> subject.matched.append(event) }
+        action { event -> if (event) { subject.matched.append(event) } }
     }
 
     Token nextToken() {

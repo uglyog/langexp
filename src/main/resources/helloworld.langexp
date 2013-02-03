@@ -1,2 +1,2 @@
-; Hello World example
+// Hello World example
 print 'hello world'
