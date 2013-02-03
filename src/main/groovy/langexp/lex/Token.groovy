@@ -4,6 +4,7 @@ class Token
 {
     enum Type {
         UNKNOWN,
+        EOF,
         WHITESPACE,
         NEWLINE,
         SYMBOL,

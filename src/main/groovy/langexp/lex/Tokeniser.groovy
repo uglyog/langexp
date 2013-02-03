@@ -22,6 +22,7 @@ class Tokeniser
 
     def stateMachine = StateMachineBuilder.build {
         start {
+            event State.EOF, to: Token.Type.EOF
             event '\n', to: Token.Type.NEWLINE
             event '/', to: 'SLASH'
             event ~/[ \t]/, to:  Token.Type.WHITESPACE
@@ -49,17 +50,18 @@ class Tokeniser
                 if (stateMachine.currentEvent == subject.firstMatched) {
                     terminate()
                 } else {
+                    flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found (${stateMachine.currentEvent})")
                     pushbackAndTerminate()
-                    flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found ${stateMachine.currentEvent}")
                 }
             }
             event State.EOF, action:  {
-                terminate()
                 flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found EOF")
+                terminate()
             }
         }
 
         finalState(Token.Type.NEWLINE)
+        finalState(Token.Type.EOF)
 
         onTermination {
             if (stateMachine.currentState instanceof Token.Type) {
