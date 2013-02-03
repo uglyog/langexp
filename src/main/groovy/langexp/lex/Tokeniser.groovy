@@ -1,14 +1,13 @@
 package langexp.lex
 
 import langexp.statemachine.StateMachineBuilder
+import static langexp.lex.Token.Type.*
 
 class Tokeniser
 {
     Reader input
     def errors = []
     int currentLine = 1, currentChar = 1
-
-    enum State { EOF }
 
     def pushback = {
         input.unread(stateMachine.currentEvent.toCharArray())
@@ -22,29 +21,29 @@ class Tokeniser
 
     def stateMachine = StateMachineBuilder.build {
         start {
-            event State.EOF, to: Token.Type.EOF
-            event '\n', to: Token.Type.NEWLINE
+            event '\n', to: NEWLINE
             event '/', to: 'SLASH'
-            event ~/[ \t]/, to:  Token.Type.WHITESPACE
-            event ~/[A-Za-z_!@#\$]/, to: Token.Type.SYMBOL
-            event ~/['"`]/, to: Token.Type.STRING
+            event ~/[ \t]/, to:  WHITESPACE
+            event ~/[A-Za-z_!@#\$]/, to: SYMBOL
+            event ~/['"`]/, to: STRING
         }
         state('SLASH') {
-            event '/', to: Token.Type.COMMENT
+            event '/', to: COMMENT
         }
-        state(Token.Type.COMMENT) {
+        state(COMMENT) {
             event ~/[^\n]/
             event '\n', action: pushbackAndTerminate
         }
-        state(Token.Type.WHITESPACE) {
+        state(WHITESPACE) {
             event ~/[ \t]/
             event ~/[^ \t]/, action: pushbackAndTerminate
         }
-        state(Token.Type.SYMBOL) {
+        state(SYMBOL) {
+            onEntry { subject.type = SYMBOL }
             event ~/[A-Za-z_!@#\$]/
             event ~/[^A-Za-z_!@#\$]/, action: pushbackAndTerminate
         }
-        state(Token.Type.STRING) {
+        state(STRING) {
             event ~/[^'"`]/
             event ~/['"`]/, action: {
                 if (stateMachine.currentEvent == subject.firstMatched) {
@@ -54,17 +53,17 @@ class Tokeniser
                     pushbackAndTerminate()
                 }
             }
-            event State.EOF, action:  {
+            event EOF, action:  {
                 flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found EOF")
                 terminate()
             }
         }
 
-        finalState(Token.Type.NEWLINE)
-        finalState(Token.Type.EOF)
+        finalState(NEWLINE)
+        finalState(EOF)
 
         onTermination {
-            if (stateMachine.currentState instanceof Token.Type) {
+            if (stateMachine.currentState instanceof Token.Type && subject.type == UNKNOWN) {
                 subject.type = stateMachine.currentState
             }
         }
@@ -80,7 +79,7 @@ class Tokeniser
                 }
             }
         }
-        event State.EOF, action: { terminate() }
+        event EOF, to: EOF
     }
 
     Token nextToken() {
@@ -91,13 +90,17 @@ class Tokeniser
             if (ch >= 0) {
                 stateMachine.transition(Character.toChars(ch) as String)
             } else {
-                stateMachine.transition(State.EOF)
+                stateMachine.transition(EOF)
             }
         }
         stateMachine.currentState ? stateMachine.subject : null
     }
 
     void flagError(String error) {
-        errors << "[$currentLine, $currentChar]: $error"
+        errors << errorMessage(error)
+    }
+
+    String errorMessage(String error) {
+        "[$currentLine, $currentChar]: $error"
     }
 }
