@@ -17,7 +17,9 @@ options.arguments().each {
             println token
             token = tokeniser.nextToken()
         }
-        println()
-        println tokeniser.errors
+        if (tokeniser.errors) {
+            println "\nFound the following errors:"
+            tokeniser.errors.each { println it }
+        }
     }
 }

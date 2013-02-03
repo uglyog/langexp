@@ -6,6 +6,7 @@ class Tokeniser
 {
     Reader input
     def errors = []
+    int currentLine = 1, currentChar = 1
 
     enum State { EOF }
 
@@ -67,8 +68,14 @@ class Tokeniser
         }
 
         action { event ->
-            if (event && event instanceof String) {
+            if (event instanceof String) {
                 subject.appendToMatched(event)
+                if (event == '\n') {
+                    currentLine++
+                    currentChar = 1
+                } else {
+                    currentChar++
+                }
             }
         }
         event State.EOF, action: { terminate() }
@@ -89,6 +96,6 @@ class Tokeniser
     }
 
     void flagError(String error) {
-        errors << error
+        errors << "[$currentLine, $currentChar]: $error"
     }
 }
