@@ -4,9 +4,11 @@ import java.util.regex.Pattern
 
 class StateMachine {
 
-    def stateMachineMap = [:], currentState, currentEvent, subject, globalActions = []
+    def stateMachineMap = [:], currentState, currentEvent, subject, globalActions = [], globalEvents = []
     Closure terminationAction
     boolean terminated
+
+    def findEvent = { it instanceof Map && matches(it.event, currentEvent) && (!it.guard || it.guard(this)) }
 
     void transition(event) {
 
@@ -17,7 +19,10 @@ class StateMachine {
 
         currentEvent = event
 
-        def transition = stateMachineMap[currentState]?.events?.find { it instanceof Map && matches(it.event, currentEvent) && (!it.guard || it.guard(this)) }
+        def transition = stateMachineMap[currentState]?.events?.find(findEvent)
+        if (!transition) {
+            transition = globalEvents.find(findEvent)
+        }
         if (transition) {
             if (transition.action) {
                 transition.action.delegate = this
@@ -56,7 +61,7 @@ class StateMachine {
     }
 
     static boolean matches(event1, event2) {
-        if (event1 instanceof Pattern) {
+        if (event1 instanceof Pattern && event2 instanceof String) {
             event1.matcher(event2).matches()
         } else {
             event1 == event2

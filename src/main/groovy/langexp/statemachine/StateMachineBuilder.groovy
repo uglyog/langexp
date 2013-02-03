@@ -50,7 +50,7 @@ class StateMachineBuilder
         if (args[-1] instanceof Closure) {
             closure = args[-1]
         }
-        def evt = [event: eventName, to: options.to ?: currentState.state]
+        def evt = [event: eventName, to: options.to ?: currentState?.state]
         if (options.action) {
             evt.action = options.action
         }
@@ -65,7 +65,11 @@ class StateMachineBuilder
             currentEvent = null
         }
 
-        currentState.events << evt
+        if (currentState) {
+            currentState.events << evt
+        } else {
+            stateMachine.globalEvents << evt
+        }
     }
 
     void transitionTo(def stateKey) {

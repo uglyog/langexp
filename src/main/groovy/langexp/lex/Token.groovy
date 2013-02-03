@@ -15,8 +15,16 @@ class Token
 
     Type type = Type.UNKNOWN
     StringBuilder matched = new StringBuilder()
+    String firstMatched
 
     String toString() {
         "$type($matched)"
+    }
+
+    void appendToMatched(def s) {
+        matched.append(s)
+        if (!firstMatched) {
+            firstMatched = s
+        }
     }
 }

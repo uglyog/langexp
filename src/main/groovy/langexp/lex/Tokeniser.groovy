@@ -5,6 +5,9 @@ import langexp.statemachine.StateMachineBuilder
 class Tokeniser
 {
     Reader input
+    def errors = []
+
+    enum State { EOF }
 
     def pushback = {
         input.unread(stateMachine.currentEvent.toCharArray())
@@ -13,7 +16,7 @@ class Tokeniser
 
     def pushbackAndTerminate = {
         pushback()
-        terminate()
+        stateMachine.terminate()
     }
 
     def stateMachine = StateMachineBuilder.build {
@@ -41,7 +44,18 @@ class Tokeniser
         }
         state(Token.Type.STRING) {
             event ~/[^'"`]/
-            event ~/['"`]/, action: { terminate() }
+            event ~/['"`]/, action: {
+                if (stateMachine.currentEvent == subject.firstMatched) {
+                    terminate()
+                } else {
+                    pushbackAndTerminate()
+                    flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found ${stateMachine.currentEvent}")
+                }
+            }
+            event State.EOF, action:  {
+                terminate()
+                flagError("Expected a closing qoute (${subject.firstMatched}) to terminate a String, found EOF")
+            }
         }
 
         finalState(Token.Type.NEWLINE)
@@ -51,7 +65,13 @@ class Tokeniser
                 subject.type = stateMachine.currentState
             }
         }
-        action { event -> if (event) { subject.matched.append(event) } }
+
+        action { event ->
+            if (event && event instanceof String) {
+                subject.appendToMatched(event)
+            }
+        }
+        event State.EOF, action: { terminate() }
     }
 
     Token nextToken() {
@@ -62,84 +82,13 @@ class Tokeniser
             if (ch >= 0) {
                 stateMachine.transition(Character.toChars(ch) as String)
             } else {
-                stateMachine.terminate()
+                stateMachine.transition(State.EOF)
             }
         }
         stateMachine.currentState ? stateMachine.subject : null
     }
 
-    void advanceState(String ch) {
-        if (ch == null) {
-            result = current
-            current = null
-        } else {
-            if (current == null) {
-                switch (ch) {
-                    case '\n':
-                        result = new Token(type: Token.Type.NEWLINE, matched: ch, firstMatched: ch)
-                        break
-                    case ';':
-                        current = new Token(type: Token.Type.COMMENT, matched: ch, firstMatched: ch)
-                        break
-                    case ~/[ \t]/:
-                        current = new Token(type: Token.Type.WHITESPACE, matched: ch, firstMatched: ch)
-                        break
-                    case ~/[A-Za-z_]/:
-                        current = new Token(type: Token.Type.SYMBOL, matched: ch, firstMatched: ch)
-                        break
-                    case ~/[0-9]/:
-                        current = new Token(type: Token.Type.NUMBER, matched: ch, firstMatched: ch)
-                        break
-                    case ~/['"`]/:
-                        current = new Token(type: Token.Type.STRING, matched: ch, firstMatched: ch)
-                        break
-                    default:
-                        current = new Token(type: Token.Type.OPERATOR, matched: ch, firstMatched: ch)
-                }
-            } else {
-                switch (current.type) {
-                    case Token.Type.WHITESPACE:
-                        switch (ch) {
-                            case ~/[ \t]/:
-                                current.matched += ch
-                                break
-                            default:
-                                result = current
-                                current = null
-                                advanceState(ch)
-                        }
-                        break
-                    case Token.Type.SYMBOL:
-                        switch (ch) {
-                            case ~/[a-zA-Z0-9_]/:
-                                current.matched += ch
-                                break
-                            default:
-                                result = current
-                                current = null
-                                advanceState(ch)
-                        }
-                        break
-                    case Token.Type.COMMENT:
-                        if (ch == '\n') {
-                            result = current
-                            current = null
-                            input.unread(ch.toCharArray())
-                        } else {
-                            current.matched += ch
-                        }
-                        break
-                    case Token.Type.STRING:
-                        if (ch == current.firstMatched) {
-                            current.matched += ch
-                            result = current
-                            current = null
-                        } else {
-                            current.matched += ch
-                        }
-                        break
-                }
-            }
-        }
+    void flagError(String error) {
+        errors << error
     }
 }

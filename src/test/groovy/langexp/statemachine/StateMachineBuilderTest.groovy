@@ -135,4 +135,20 @@ class StateMachineBuilderTest
         assert stateMachine.currentState == 'state_b'
         assert stateMachine.terminated
     }
+
+    @Test
+    void testGlobalEvent()
+    {
+        boolean actionPerformed = false
+        def stateMachine = StateMachineBuilder.build {
+            state('state_a')
+            event('event_a', to: 'state_b', action: { actionPerformed = true })
+        }
+
+        stateMachine.start('state_a')
+        stateMachine.transition('event_a')
+
+        assert stateMachine.currentState == 'state_b'
+        assert actionPerformed
+    }
 }
