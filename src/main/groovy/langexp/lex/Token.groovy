@@ -28,4 +28,15 @@ class Token
             firstMatched = s
         }
     }
+
+    def tokenValue() {
+        switch (type) {
+            case Type.EOF:
+                return null
+            case Type.STRING:
+                return matched.toString()[1..-2]
+            default:
+                return matched.toString()
+        }
+    }
 }
