@@ -8,7 +8,9 @@ import static langexp.parser.AstNode.NodeType.*
 class AstInterpreter
 {
     Ast ast
-    Map<String, Variable> symbolTable = [:]
+    Map<String, Variable> symbolTable = [
+        'print': null
+    ]
 
     def execute() {
         evaluate(ast.root)
@@ -40,7 +42,7 @@ class AstInterpreter
         symbolTable[symbolName].value
     }
 
-    def executeFunction(Token symbol, List params) {
+    static def executeFunction(Token symbol, List params) {
         def result = null
         switch(symbol.tokenValue()) {
             case 'print':
@@ -52,7 +54,7 @@ class AstInterpreter
         result
     }
 
-    def functionPrint(List params)
+    static def functionPrint(List params)
     {
         String printStr = params.join(' ')
         println(printStr)
