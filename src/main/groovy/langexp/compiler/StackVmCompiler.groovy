@@ -9,8 +9,16 @@ class StackVmCompiler {
   static final int VERSION = 0
 
   enum DataType {
+    POINTER,
+    INT32,
     STRING_DATA,
     SYMBOL_DATA
+  }
+
+  enum InstructionCode {
+    PUSHADDR,
+    PUSHVAL,
+    CALLFUNC
   }
 
   Ast ast
@@ -29,7 +37,7 @@ class StackVmCompiler {
       compileAst(ast.root)
       pw.println(".TYPES")
       DataType.each {
-        pw.println("${it.ordinal()} $it")
+        pw.println("${intToHex(it.ordinal())} $it")
       }
       pw.println(".DATA")
       def ldata = data.take(64)
@@ -51,17 +59,22 @@ class StackVmCompiler {
     switch (node.type) {
       case FUNCTION:
         def address = lookup(node.value.tokenValue())
-        instructions << "CALLFUNC ${address}"
+        instructions << "${InstructionCode.PUSHVAL}  ${intToHex(node.children.size())}"
+        instructions << "${InstructionCode.CALLFUNC} ${intToHex(address)}"
         break
       case STRING:
         def address = pushString(node.value.tokenValue())
-        instructions << "PUSHADDR ${Integer.toHexString(address).toUpperCase()}"
+        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address)}"
         break
       case SYMBOL:
         def address = lookup(node.value.tokenValue())
-        instructions << "PUSHADDR ${Integer.toHexString(address).toUpperCase()}"
+        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address)}"
         break
     }
+  }
+
+  static String intToHex(int val) {
+    Integer.toHexString(val).toUpperCase()
   }
 
   int lookup(String symbol) {

@@ -67,4 +67,9 @@ class AstInterpreter
             println it
         }
     }
+
+  void dumpData() {
+    println "Symbol Table:"
+    printSymbolTable()
+  }
 }
