@@ -5,7 +5,7 @@ import org.apache.commons.lang3.time.StopWatch
 def cli = new CliBuilder(usage: 'langexp [options] [targets]', header: 'Options:')
 cli.h(longOpt: 'help', 'print this message')
 cli.t(longOpt: 'target', args: 1, argName: 'target', 'set the target to execute/compile to [SBVM, AST]')
-cli.c(longOpt: 'compile', 'compile the source instead of executing it')
+cli.c(longOpt: 'compile', 'only compile the source instead of executing it')
 cli.o(longOpt: 'output', args: 1, argName: 'outputFile', 'file to write to')
 def options = cli.parse(args)
 
@@ -70,33 +70,6 @@ options.arguments().each { inputFile ->
       }
     }
 
-//    if (!options.c) {
-//      println "Executing SBVM ..."
-//      StackVmInterpreter interpreter = new StackVmInterpreter(inputFile: inputFile)
-//      interpreter.loadFile()
-//      def result = interpreter.execute()
-//      stopwatch.split()
-//      println "Execution Took: ${stopwatch.toSplitString()}"
-//      println "Result = $result"
-//      interpreter.dumpData()
-//    } else {
-//
-//
-//
-//
-//        if (options.c) {
-//          println "Compiling AST to SBVM ..."
-//          def compiler = new StackVmCompiler(ast: ast, inputFile: inputFile)
-//          if (options.o) {
-//            compiler.file = options.o
-//          }
-//          compiler.compile()
-//        }
-//        else {
-//
-//        }
-//      }
-//    }
     stopwatch.stop()
     println "Total Time: $stopwatch"
   }

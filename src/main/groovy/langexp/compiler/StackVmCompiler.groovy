@@ -29,9 +29,9 @@ class StackVmCompiler {
   def data = []
 
   void compile() {
-    def outputFile = file ?: (FilenameUtils.removeExtension(inputFile) + '.sbvm')
-    println("Compiling to $outputFile")
-    new File(outputFile).withPrintWriter { pw ->
+    file = file ?: (FilenameUtils.removeExtension(inputFile) + '.sbvm')
+    println("Compiling to $file")
+    new File(file).withPrintWriter { pw ->
       pw.println("; Stack based virtual machine")
       pw.println("; VERSION $VERSION")
       compileAst(ast.root)
@@ -107,11 +107,11 @@ class StackVmCompiler {
   }
 
   static byte[] toByteArray(int value) {
-      [
-          (byte) (value >> 24),
-          (byte) (value >> 16),
-          (byte) (value >> 8),
-          (byte) value
-      ]
+    [
+      (byte) (value >> 24),
+      (byte) (value >> 16),
+      (byte) (value >> 8),
+      (byte) value
+    ]
   }
 }
