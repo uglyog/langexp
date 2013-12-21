@@ -1,6 +1,7 @@
 package langexp.interpreter
 
 import langexp.compiler.StackVmCompiler
+import langexp.compiler.StackVmUtils
 import org.apache.commons.lang3.builder.ToStringBuilder
 
 class StackVmInterpreter {
@@ -19,11 +20,7 @@ class StackVmInterpreter {
 
     @Override
     public String toString() {
-      new ToStringBuilder(this).
-        append("code", code).
-        append("parameters", parameters).
-        append("address", address).
-        toString()
+      "code=$code, parameters=$parameters, address=$address"
     }
   }
 
@@ -92,13 +89,13 @@ class StackVmInterpreter {
       switch (instruction.code) {
         case StackVmCompiler.InstructionCode.PUSHADDR:
           instruction.parameters.each {
-            stack.addAll(StackVmCompiler.toByteArray(it) as List)
+            stack.addAll(StackVmUtils.toByteArray(it) as List)
             stack.add(StackVmCompiler.DataType.POINTER.ordinal() as byte)
           }
           break
         case StackVmCompiler.InstructionCode.PUSHVAL:
           instruction.parameters.each {
-            stack.addAll(StackVmCompiler.toByteArray(it) as List)
+            stack.addAll(StackVmUtils.toByteArray(it) as List)
             stack.add(StackVmCompiler.DataType.INT32.ordinal() as byte)
           }
           break
@@ -111,7 +108,7 @@ class StackVmInterpreter {
     }
 
     if (!stack.empty) {
-      popValue()
+      return resolveReference(popValue())
     }
   }
 
@@ -135,25 +132,33 @@ class StackVmInterpreter {
     }
   }
 
-  void callPrint() {
+  def callPrint() {
     int numParams = popInteger()
     List<Reference> params = []
     numParams.times {
       params << popValue()
     }
-    println params.collect() {
-      def value = null
-      switch (it.dataType) {
-        case StackVmCompiler.DataType.POINTER:
-          Reference ref = fetchData(it.value)
-          value = ref.value
-          break
-        case StackVmCompiler.DataType.INT32:
-          value = it.value
-          break
-      }
-      value
-    }.join(' ')
+
+    def str = params.collect() { resolveReference(it) }.join(' ')
+    println str
+
+    def index = StackVmUtils.pushString(data, str)
+    stack.addAll(StackVmUtils.toByteArray(index) as List)
+    stack.add(StackVmCompiler.DataType.POINTER.ordinal() as byte)
+  }
+
+  def resolveReference(Reference reference) {
+    def value = null
+    switch (reference.dataType) {
+      case StackVmCompiler.DataType.POINTER:
+        Reference ref = fetchData(reference.value)
+        value = ref.value
+        break
+      case StackVmCompiler.DataType.INT32:
+        value = reference.value
+        break
+    }
+    value
   }
 
   Reference fetchData(int address) {

@@ -32,6 +32,8 @@ class AstInterpreter {
       case SYMBOL:
         result = evaluateSymbol(astNode.value)
         break
+      default:
+        result = results.join()
     }
     result
   }
@@ -56,16 +58,16 @@ class AstInterpreter {
     result
   }
 
-  static def functionPrint(List params) {
+  static String functionPrint(List params) {
     String printStr = params.join(' ')
     println(printStr)
     printStr
   }
 
   void printSymbolTable() {
-    def table = new Table().addColumn('Symbol', 20).addColumn('Value', 60)
+    def table = new Table().addColumn('Symbol', 20).addColumn('Type', 20).addColumn('Value', 60)
     symbolTable.each {
-      table.addRow([it.key, it.value])
+      table.addRow([it.key, it.value.type, it.value.value])
     }
     table.print()
   }

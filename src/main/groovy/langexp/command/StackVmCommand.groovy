@@ -20,9 +20,12 @@ class StackVmCommand extends BaseCommand {
 
   Object execute() {
     println "Executing SBVM ..."
+    println "-" * 80
     interpreter = new StackVmInterpreter(inputFile: compiler.file)
     interpreter.loadFile()
-    interpreter.execute()
+    def result = interpreter.execute()
+    println "-" * 80
+    result
   }
 
   void dumpData() {

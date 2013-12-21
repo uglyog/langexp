@@ -63,7 +63,7 @@ class StackVmCompiler {
         instructions << "${InstructionCode.CALLFUNC} ${intToHex(address)}"
         break
       case STRING:
-        def address = pushString(node.value.tokenValue())
+        def address = StackVmUtils.pushString(data, node.value.tokenValue())
         instructions << "${InstructionCode.PUSHADDR} ${intToHex(address)}"
         break
       case SYMBOL:
@@ -79,39 +79,9 @@ class StackVmCompiler {
 
   int lookup(String symbol) {
     if (!symbolTable.containsKey(symbol)) {
-      symbolTable[symbol] = pushSymbol(symbol)
+      symbolTable[symbol] = StackVmUtils.pushSymbol(data, symbol)
     }
     symbolTable[symbol]
   }
 
-  int pushData(byte[] d) {
-    def index = data.size()
-    data.addAll(d)
-    index
-  }
-
-  int pushString(String sdata) {
-    def index = data.size()
-    data.add(DataType.STRING_DATA.ordinal())
-    data.addAll(toByteArray(sdata.length()))
-    data.addAll(sdata.getBytes())
-    index
-  }
-
-  int pushSymbol(String symbol) {
-    def index = data.size()
-    data.add(DataType.SYMBOL_DATA.ordinal())
-    data.add(symbol.length())
-    data.addAll(symbol.getBytes())
-    index
-  }
-
-  static byte[] toByteArray(int value) {
-    [
-      (byte) (value >> 24),
-      (byte) (value >> 16),
-      (byte) (value >> 8),
-      (byte) value
-    ]
-  }
 }
