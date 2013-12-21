@@ -12,10 +12,6 @@ class BaseCommand {
   Object options
   String inputFile
 
-  BaseCommand(options) {
-    this.options = options
-  }
-
   void parse() {
     new File(inputFile).withReader { reader ->
       tokeniser = new Tokeniser(input: new PushbackReader(reader))

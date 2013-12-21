@@ -3,15 +3,19 @@ package langexp.interpreter
 import langexp.lex.Token
 import langexp.parser.Ast
 import langexp.parser.AstNode
+import langexp.parser.Parser
+import langexp.parser.Symbol
+import langexp.util.Table
+
 import static langexp.parser.AstNode.NodeType.*
 
 class AstInterpreter {
   Ast ast
-  Map<String, Variable> symbolTable = [
-    'print': null
-  ]
+  Parser parser
+  def symbolTable
 
   def execute() {
+    setupSymbolTable()
     evaluate(ast.root)
   }
 
@@ -35,7 +39,7 @@ class AstInterpreter {
   def evaluateSymbol(Token symbol) {
     def symbolName = symbol.tokenValue()
     if (!symbolTable.containsKey(symbolName)) {
-      symbolTable[symbolName] = new Variable(name: symbolName, type: Variable.Type.SYMBOL, value: symbolName)
+      symbolTable[symbolName] = new Variable(type: new Symbol(type: Symbol.Type.SYMBOL), value: symbolName)
     }
     symbolTable[symbolName].value
   }
@@ -59,13 +63,19 @@ class AstInterpreter {
   }
 
   void printSymbolTable() {
+    def table = new Table().addColumn('Symbol', 20).addColumn('Value', 60)
     symbolTable.each {
-      println it
+      table.addRow([it.key, it.value])
     }
+    table.print()
   }
 
   void dumpData() {
     println "Symbol Table:"
     printSymbolTable()
+  }
+
+  void setupSymbolTable() {
+    symbolTable = new HashMap(parser.symbolTable.collect { [it.key, new Variable(type: it.value)] }.flatten().toSpreadMap())
   }
 }

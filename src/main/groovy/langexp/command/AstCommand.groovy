@@ -7,18 +7,13 @@ class AstCommand extends BaseCommand {
   def type = 'AST'
   AstInterpreter interpreter
 
-  AstCommand(Object options) {
-    super(options)
-  }
-
   void compile() {
-
   }
 
   Object execute() {
     println "Executing AST ..."
     println "-" * 80
-    interpreter = new AstInterpreter(ast: ast)
+    interpreter = new AstInterpreter(ast: ast, parser: parser)
     def result = interpreter.execute()
     println "-" * 80
     result

@@ -14,13 +14,13 @@ if (!options?.arguments()) {
   System.exit(1)
 }
 
-def command = new StackVmCommand(options)
+def command = new StackVmCommand(options: options)
 if (options.t) {
   switch (options.t.toUpperCase()) {
     case 'SBVM':
       break
     case 'AST':
-      command = new AstCommand(options)
+      command = new AstCommand(options: options)
       break
     default:
       println "Invalid target type of ${options.t}"

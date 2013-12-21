@@ -9,10 +9,6 @@ class StackVmCommand extends BaseCommand {
   StackVmInterpreter interpreter
   StackVmCompiler compiler
 
-  StackVmCommand(Object options) {
-    super(options)
-  }
-
   void compile() {
     println "Compiling AST to SBVM ..."
     compiler = new StackVmCompiler(ast: ast, inputFile: inputFile)
