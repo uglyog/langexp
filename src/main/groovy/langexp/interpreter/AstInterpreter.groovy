@@ -23,8 +23,8 @@ class AstInterpreter {
     def result = null
     def results = astNode.children.collect() { evaluate(it) }
     switch (astNode.type) {
-      case FUNCTION:
-        result = executeFunction(astNode.value, results)
+      case SEQUENCE:
+        result = handleSequence(astNode, results)
         break
       case STRING:
         result = astNode.value.tokenValue()
@@ -32,8 +32,27 @@ class AstInterpreter {
       case SYMBOL:
         result = evaluateSymbol(astNode.value)
         break
+      case COMMENT:
+        result = VOID
+        break
       default:
         result = results.join()
+    }
+    result
+  }
+
+  static def handleSequence(AstNode astNode, List results) {
+    def result
+    switch (astNode.subType) {
+      case EXPRESSION:
+        if (results[0].type.type == Symbol.Type.FUNCTION) {
+          result = executeFunction(results[0].value, results.tail())
+        } else {
+          result = results
+        }
+        break
+      default:
+        result = results - VOID
     }
     result
   }
@@ -43,23 +62,29 @@ class AstInterpreter {
     if (!symbolTable.containsKey(symbolName)) {
       symbolTable[symbolName] = new Variable(type: new Symbol(type: Symbol.Type.SYMBOL), value: symbolName)
     }
-    symbolTable[symbolName].value
+    symbolTable[symbolName]
   }
 
-  static def executeFunction(Token symbol, List params) {
+  static def executeFunction(def symbol, List params) {
     def result = null
-    switch (symbol.tokenValue()) {
+    switch (symbol as String) {
       case 'print':
         result = functionPrint(params)
         break
       default:
-        throw new Exception("Unknown function ${symbol.tokenValue()}")
+        throw new Exception("Unknown function $symbol")
     }
     result
   }
 
   static String functionPrint(List params) {
-    String printStr = params.join(' ')
+    String printStr = params.collect {
+      if (it instanceof Variable) {
+        it.value
+      } else {
+        it
+      }
+    }.join(' ')
     println(printStr)
     printStr
   }
@@ -78,6 +103,8 @@ class AstInterpreter {
   }
 
   void setupSymbolTable() {
-    symbolTable = new HashMap(parser.symbolTable.collect { [it.key, new Variable(type: it.value)] }.flatten().toSpreadMap())
+    symbolTable = new HashMap(parser.symbolTable.collect {
+      [it.key, new Variable(type: it.value, value: it.key)]
+    }.flatten().toSpreadMap())
   }
 }

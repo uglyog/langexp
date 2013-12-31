@@ -5,6 +5,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder
 
 class AstNode {
   enum NodeType {
+    VOID,
     FUNCTION,
     STRING,
     SYMBOL,
@@ -23,6 +24,7 @@ class AstNode {
     return new ToStringBuilder(this).
       append("value", value).
       append("type", type).
+      append("subType", subType).
       toString();
   }
 
