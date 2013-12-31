@@ -78,15 +78,21 @@ class AstInterpreter {
   }
 
   static String functionPrint(List params) {
-    String printStr = params.collect {
+    String printStr = printParams(params)
+    println(printStr)
+    printStr
+  }
+
+  static String printParams(List params) {
+    params.collect {
       if (it instanceof Variable) {
         it.value
+      } else if (it instanceof List) {
+        printParams(it)
       } else {
         it
       }
-    }.join(' ')
-    println(printStr)
-    printStr
+    }.flatten().join(' ')
   }
 
   void printSymbolTable() {

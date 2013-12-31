@@ -108,7 +108,11 @@ class StackVmInterpreter {
     }
 
     if (!stack.empty) {
-      return resolveReference(popValue())
+      def result = []
+      while (!stack.empty) {
+        result << resolveReference(popValue())
+      }
+      result.reverse()
     }
   }
 

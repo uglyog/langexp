@@ -11,16 +11,24 @@ class AstCommand extends BaseCommand {
   }
 
   Object execute() {
-    println "Executing AST ..."
-    println "-" * 80
+    if (options.v) {
+      println "Executing AST ..."
+      println "-" * 80
+    }
     interpreter = new AstInterpreter(ast: ast, parser: parser)
     def result = interpreter.execute()
-    println "-" * 80
+    if (options.v) {
+      println "-" * 80
+    }
     result
   }
 
   void dumpData() {
     interpreter.dumpData()
+  }
+
+  String print(values) {
+    interpreter.printParams(values)
   }
 
 }

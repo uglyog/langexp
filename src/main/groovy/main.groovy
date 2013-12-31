@@ -7,6 +7,7 @@ cli.h(longOpt: 'help', 'print this message')
 cli.t(longOpt: 'target', args: 1, argName: 'target', 'set the target to execute/compile to [SBVM, AST]')
 cli.c(longOpt: 'compile', 'only compile the source instead of executing it')
 cli.o(longOpt: 'output', args: 1, argName: 'outputFile', 'file to write to')
+cli.v(longOpt: 'verbose', 'verbose output')
 def options = cli.parse(args)
 
 if (!options?.arguments()) {
@@ -29,7 +30,9 @@ if (options.t) {
   }
 }
 
-println "Target set to ${command.type}"
+if (options.v) {
+  println "Target set to ${command.type}"
+}
 
 options.arguments().each { inputFile ->
 
@@ -39,12 +42,18 @@ options.arguments().each { inputFile ->
     def stopwatch = new StopWatch()
     stopwatch.start()
 
-    println "-- Parse Phase --"
+    if (options.v) {
+      println "-- Parse Phase --"
+    }
     command.parse()
     stopwatch.split()
-    println "Execution Took: ${stopwatch.toSplitString()}"
+    if (options.v) {
+      println "Execution Took: ${stopwatch.toSplitString()}"
+    }
 
-    command.ast.printAsciiTree()
+    if (options.v) {
+      command.ast.printAsciiTree()
+    }
     if (command.tokeniser.errors) {
       println "\nFound the following lexical errors:"
       command.tokeniser.errors.each { println it }
@@ -55,22 +64,34 @@ options.arguments().each { inputFile ->
     }
 
     if (!command.tokeniser.errors && !command.parser.errors) {
-      println "-- Compile Phase --"
+      if (options.v) {
+        println "-- Compile Phase --"
+      }
       command.compile()
-      stopwatch.split()
-      println "Execution Took: ${stopwatch.toSplitString()}"
-
-      if (!options.c) {
-        println "-- Execute Phase --"
-        def result = command.execute()
+      if (options.v) {
         stopwatch.split()
         println "Execution Took: ${stopwatch.toSplitString()}"
-        println "Result = $result"
-        command.dumpData()
+      }
+
+      if (!options.c) {
+        if (options.v) {
+          println "-- Execute Phase --"
+        }
+        def result = command.execute()
+        if (options.v) {
+          stopwatch.split()
+          println "Execution Took: ${stopwatch.toSplitString()}"
+        }
+        println "Result = ${command.print(result)}"
+        if (options.v) {
+          command.dumpData()
+        }
       }
     }
 
     stopwatch.stop()
-    println "Total Time: $stopwatch"
+    if (options.v) {
+      println "Total Time: $stopwatch"
+    }
   }
 }

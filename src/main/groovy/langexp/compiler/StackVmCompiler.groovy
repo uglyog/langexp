@@ -27,10 +27,13 @@ class StackVmCompiler {
   def symbolTable = [:]
   def instructions = []
   def data = []
+  boolean verbose = false
 
   void compile() {
     file = file ?: (FilenameUtils.removeExtension(inputFile) + '.sbvm')
-    println("Compiling to $file")
+    if (verbose) {
+      println("Compiling to $file")
+    }
     new File(file).withPrintWriter { pw ->
       pw.println("; Stack based virtual machine")
       pw.println("; VERSION $VERSION")

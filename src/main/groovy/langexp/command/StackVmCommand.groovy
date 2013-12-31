@@ -10,8 +10,10 @@ class StackVmCommand extends BaseCommand {
   StackVmCompiler compiler
 
   void compile() {
-    println "Compiling AST to SBVM ..."
-    compiler = new StackVmCompiler(ast: ast, inputFile: inputFile)
+    if (options.v) {
+      println "Compiling AST to SBVM ..."
+    }
+    compiler = new StackVmCompiler(ast: ast, inputFile: inputFile, verbose: options.v)
     if (options.o) {
       compiler.file = options.o
     }
@@ -19,17 +21,25 @@ class StackVmCommand extends BaseCommand {
   }
 
   Object execute() {
-    println "Executing SBVM ..."
-    println "-" * 80
+    if (options.v) {
+      println "Executing SBVM ..."
+      println "-" * 80
+    }
     interpreter = new StackVmInterpreter(inputFile: compiler.file)
     interpreter.loadFile()
     def result = interpreter.execute()
-    println "-" * 80
+    if (options.v) {
+      println "-" * 80
+    }
     result
   }
 
   void dumpData() {
     interpreter.dumpData()
+  }
+
+  String print(values) {
+    values.join(' ')
   }
 
 }
