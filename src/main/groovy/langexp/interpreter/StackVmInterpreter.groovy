@@ -100,7 +100,7 @@ class StackVmInterpreter {
           }
           break
         case StackVmCompiler.InstructionCode.CALLFUNC:
-          callFunction(instruction.parameters.first())
+          callFunction()
           break
         default:
           throw new Exception("Invalid instruction ${instruction.code} found at address ${StackVmCompiler.intToHex(codePointer)}")
@@ -116,7 +116,14 @@ class StackVmInterpreter {
     }
   }
 
-  void callFunction(int address) {
+  void callFunction() {
+    int numParameters = popInteger()
+    def parameters = []
+    numParameters.times {
+      parameters << popValue()
+    }
+
+    def address = parameters.last().address
     def dataType = StackVmCompiler.DataType.values()[data[address]]
     def functionReference
     switch (dataType) {
@@ -129,25 +136,19 @@ class StackVmInterpreter {
 
     switch (functionReference) {
       case 'print':
-        callPrint()
+        callPrint(parameters.reverse().tail())
         break
       default:
         throw new Exception("Invalid function reference $functionReference at address ${StackVmCompiler.intToHex(address)}")
     }
   }
 
-  def callPrint() {
-    int numParams = popInteger()
-    List<Reference> params = []
-    numParams.times {
-      params << popValue()
-    }
-
+  def callPrint(def params) {
     def str = params.collect() { resolveReference(it) }.join(' ')
     println str
 
     def index = StackVmUtils.pushString(data, str)
-    stack.addAll(StackVmUtils.toByteArray(index) as List)
+    stack.addAll(StackVmUtils.toByteArray(index.address) as List)
     stack.add(StackVmCompiler.DataType.POINTER.ordinal() as byte)
   }
 

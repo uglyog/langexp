@@ -2,6 +2,9 @@ package langexp.compiler
 
 import langexp.parser.Ast
 import langexp.parser.AstNode
+import langexp.parser.Parser
+import langexp.parser.Symbol
+
 import static langexp.parser.AstNode.NodeType.*
 import org.apache.commons.io.FilenameUtils
 
@@ -28,6 +31,7 @@ class StackVmCompiler {
   def instructions = []
   def data = []
   boolean verbose = false
+  Parser parser
 
   void compile() {
     file = file ?: (FilenameUtils.removeExtension(inputFile) + '.sbvm')
@@ -37,6 +41,7 @@ class StackVmCompiler {
     new File(file).withPrintWriter { pw ->
       pw.println("; Stack based virtual machine")
       pw.println("; VERSION $VERSION")
+      setupSymbolTable()
       compileAst(ast.root)
       pw.println(".TYPES")
       DataType.each {
@@ -60,18 +65,29 @@ class StackVmCompiler {
   void compileAst(AstNode node) {
     node.children.each() { compileAst(it) }
     switch (node.type) {
-      case FUNCTION:
-        def address = lookup(node.value.tokenValue())
-        instructions << "${InstructionCode.PUSHVAL}  ${intToHex(node.children.size())}"
-        instructions << "${InstructionCode.CALLFUNC} ${intToHex(address)}"
-        break
       case STRING:
-        def address = StackVmUtils.pushString(data, node.value.tokenValue())
-        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address)}"
+        SymbolEntry address = StackVmUtils.pushString(data, node.value.tokenValue())
+        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address.address)}"
         break
       case SYMBOL:
-        def address = lookup(node.value.tokenValue())
-        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address)}"
+        SymbolEntry address = lookup(node.value.tokenValue())
+        instructions << "${InstructionCode.PUSHADDR} ${intToHex(address.address)}"
+        break
+      case SEQUENCE:
+        handleSequence(node)
+        break
+    }
+  }
+
+  void handleSequence(AstNode node) {
+    switch (node.subType) {
+      case EXPRESSION:
+        def firstChild = node.children.first()
+        def value = firstChild.value.tokenValue()
+        if (symbolTable.containsKey(value) && symbolTable[value].type == FUNCTION) {
+          instructions << "${InstructionCode.PUSHVAL}  ${intToHex(node.children.size())}"
+          instructions << "${InstructionCode.CALLFUNC}"
+        }
         break
     }
   }
@@ -80,11 +96,20 @@ class StackVmCompiler {
     Integer.toHexString(val).toUpperCase()
   }
 
-  int lookup(String symbol) {
+  SymbolEntry lookup(String symbol) {
     if (!symbolTable.containsKey(symbol)) {
       symbolTable[symbol] = StackVmUtils.pushSymbol(data, symbol)
     }
     symbolTable[symbol]
+  }
+
+  void setupSymbolTable() {
+    parser.symbolTable.each {
+      symbolTable[it.key] = StackVmUtils.pushSymbol(data, it.key)
+      if (it.value.type == Symbol.Type.FUNCTION) {
+        symbolTable[it.key].type = FUNCTION
+      }
+    }
   }
 
 }

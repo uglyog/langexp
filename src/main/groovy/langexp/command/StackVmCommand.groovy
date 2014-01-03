@@ -13,7 +13,7 @@ class StackVmCommand extends BaseCommand {
     if (options.v) {
       println "Compiling AST to SBVM ..."
     }
-    compiler = new StackVmCompiler(ast: ast, inputFile: inputFile, verbose: options.v)
+    compiler = new StackVmCompiler(ast: ast, inputFile: inputFile, verbose: options.v, parser: parser)
     if (options.o) {
       compiler.file = options.o
     }

@@ -1,5 +1,7 @@
 package langexp.compiler
 
+import langexp.parser.AstNode
+
 class StackVmUtils {
 
   static int pushData(List data, byte[] d) {
@@ -8,20 +10,20 @@ class StackVmUtils {
     index
   }
 
-  static int pushString(List data, String sdata) {
+  static SymbolEntry pushString(List data, String sdata) {
     def index = data.size()
     data.add(StackVmCompiler.DataType.STRING_DATA.ordinal())
     data.addAll(toByteArray(sdata.length()))
     data.addAll(sdata.getBytes())
-    index
+    new SymbolEntry(address: index, type: AstNode.NodeType.STRING)
   }
 
-  static int pushSymbol(List data, String symbol) {
+  static SymbolEntry pushSymbol(List data, String symbol) {
     def index = data.size()
     data.add(StackVmCompiler.DataType.SYMBOL_DATA.ordinal())
     data.add(symbol.length())
     data.addAll(symbol.getBytes())
-    index
+    new SymbolEntry(address: index, type: AstNode.NodeType.SYMBOL)
   }
 
   static byte[] toByteArray(int value) {
